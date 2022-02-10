@@ -1,5 +1,7 @@
 import discord
 from discord.ext import commands
+import random
+import time
 
 f = open("token.txt", "r")
 token = f.read()
@@ -72,11 +74,23 @@ async def on_message(message):
             if playerRole in user.roles:
 
                 #remove role
-                user = message.author
-                await user.remove_roles(tagRole)
+                await message.author.remove_roles(tagRole)
 
                 #assign role
-                user = message.guild.get_member(id)
+                if user.id == client.user.id: #if bot is tagged
+                    await user.add_roles(tagRole)
+                    if random.randint(0, 100) < 40:
+                        responses = ['https://tenor.com/view/starwars-han-solo-tag-youre-it-stormtrooper-gif-20240479', 'https://tenor.com/view/monty-python-holy-grail-horse-on-my-way-omw-gif-13663405', 'https://imgur.com/VVMZWAn', 'https://tenor.com/view/halo-master-chief-halo-infinite-xbox-xbox-series-x-gif-19586612']
+                        await message.channel.send(random.choice(responses))
+                    time.sleep(2)
+
+                    await user.remove_roles(tagRole)
+
+                    n = message.guild.member_count - 1
+                    while playerRole not in user.roles or user.id == client.user.id: #no tagging non-players, or self
+                        user = message.guild.members[random.randint(0, n)]
+
+                    await message.channel.send('<@' + str(user.id) + '>')
                 await user.add_roles(tagRole)
 
     await client.process_commands(message)
