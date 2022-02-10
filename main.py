@@ -1,4 +1,5 @@
 import discord
+from discord.ext import commands
 
 f = open("token.txt", "r")
 token = f.read()
@@ -7,11 +8,32 @@ f.close()
 intents = discord.Intents.default()
 intents.members = True
 activity = discord.Game(name="Tag")
-client = discord.Client(intents=intents, activity=activity)
+client = commands.Bot(command_prefix='$', intents=intents, activity=activity)
 
 @client.event
 async def on_ready():
     print('Logged in as {0.user} (discord-tag)\n'.format(client))
+
+@client.command()
+async def setup(ctx):
+
+    role = discord.utils.get(ctx.guild.roles, name="PlayingTag")
+    if role == None:
+        await ctx.guild.create_role(name="PlayingTag")
+
+    role = discord.utils.get(ctx.guild.roles, name="It")
+    if role == None:
+        await ctx.guild.create_role(name="It")
+    await role.edit(colour=0x9b59b6)
+
+    #move role as high as possible
+    try:
+        pos = 1
+        while True:
+            await role.edit(position=pos)
+            pos += 1
+    except:
+        await ctx.message.add_reaction('👍')
 
 @client.event
 async def on_message(message):
@@ -29,7 +51,7 @@ async def on_message(message):
             else:
                 keynote = '@'
 
-            #get tagged user's id
+            #get tagged user
             msg = str(message.content)
             temp = ''
             flag = False
@@ -43,13 +65,20 @@ async def on_message(message):
                     else:
                         temp += msg[i]
             id = int(temp)
-
-            #remove role
-            user = message.author
-            await user.remove_roles(tagRole)
-
-            #assign role
             user = message.guild.get_member(id)
-            await user.add_roles(tagRole)
+
+            #only pass on role if taggee is playing
+            playerRole = discord.utils.get(message.guild.roles, name='PlayingTag')
+            if playerRole in user.roles:
+
+                #remove role
+                user = message.author
+                await user.remove_roles(tagRole)
+
+                #assign role
+                user = message.guild.get_member(id)
+                await user.add_roles(tagRole)
+
+    await client.process_commands(message)
 
 client.run(token)
